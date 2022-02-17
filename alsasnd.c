@@ -47,8 +47,16 @@ void init_snd(const char *dev, int sample_rate)
         exit(1);
     }
 
-    unsigned sample_rate = 44100;
-    if ((err = snd_pcm_hw_params_set_rate_near(playback_handle, hw_params, &sample_rate, 0)) < 0)
+    snd_pcm_uframes_t buf_sz = 4096 / 4;
+    if ((err = snd_pcm_hw_params_set_buffer_size(playback_handle, hw_params, buf_sz)) < 0)
+    {
+        fprintf(stderr, "cannot set buffer size (%s)\n",
+                snd_strerror(err));
+        exit(1);
+    }
+
+    unsigned usample_rate = sample_rate;
+    if ((err = snd_pcm_hw_params_set_rate_near(playback_handle, hw_params, &usample_rate, 0)) < 0)
     {
         fprintf(stderr, "cannot set sample rate (%s)\n",
                 snd_strerror(err));
@@ -97,5 +105,5 @@ void deinit_snd()
 
 void write_buf_snd(short *buf, int count)
 {
-    snd_pcm_writei (playback_handle, buf, count);
+    snd_pcm_writei(playback_handle, buf, count);
 }
