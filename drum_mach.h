@@ -4,7 +4,7 @@
 #define PARAM_ID_SPEED 1
 #define PARAM_ID_VOL 2
 
-void init_drum_mach();
+void init_drum_mach(int sample_rate);
 void deinit_drum_mach();
 void drum_mach_trigger(int idx);
 void drum_mach_set_param(int idx, int param, float param_val);

@@ -3,10 +3,6 @@
 #include <string.h>
 #include "drum_mach.h"
 
-#ifndef SAMPLE_DATA_PATH
-#define SAMPLE_DATA_PATH ""
-#endif
-
 // 128 midi notes so no point in defining more than that
 #define MAX_NUM_SAMPLES 128
 
@@ -23,23 +19,37 @@ struct sample_data sample_data_arr[MAX_NUM_SAMPLES];
 int init_done = 0;
 int num_samples;
 
-void init_drum_mach()
+void init_drum_mach(int sample_rate)
 {
     if (init_done)
         return;
 
     FILE *fbin, *fconfig;
+    
+    double speed_mult = 44100.0 / sample_rate;
 
-    printf("Load config from '" SAMPLE_DATA_PATH "sample_data_config.txt'\n");
-    fconfig = fopen(SAMPLE_DATA_PATH "sample_data_config.txt", "r");
+    fconfig = fopen("path_config.txt", "r");
+    if (!fconfig)
+    {
+        printf("Could not open path_config.txt\n");
+        return;
+    }
+    char sample_data_path[256];
+    fscanf(fconfig, "%s", sample_data_path);
+    fclose(fconfig);
+
+    char config_path[280];
+    sprintf(config_path, "%ssample_data_config.txt", sample_data_path);
+    printf("Load config from '%s'\n", config_path);
+    fconfig = fopen(config_path, "r");
     if (!fconfig)
     {
         printf("Could not open file!\n");
         return;
     }
 
-    char readbuf[64];
-    fgets(readbuf, 64, fconfig);
+    char readbuf[256];
+    fgets(readbuf, 256, fconfig);
     num_samples = MAX_NUM_SAMPLES;
     sscanf(readbuf, "%d", &num_samples);
     if (num_samples <= 0 || num_samples >= MAX_NUM_SAMPLES)
@@ -53,18 +63,20 @@ void init_drum_mach()
     for (int i = 0; i < num_samples; i++)
     {
         int sz = 0;
-        char sample_name[64];
-        fgets(readbuf, 64, fconfig);
-        sscanf(readbuf, "%s %d", sample_name, &sz);
+        char sample_name[256];
+        float speed = 1;
+        float vol = 0.5;
+        fgets(readbuf, 256, fconfig);
+        sscanf(readbuf, "%s %d %f %f", sample_name, &sz, &speed, &vol);
         
         sample_data_arr[i].buf = NULL;
         sample_data_arr[i].size = sz;
         sample_data_arr[i].pos = sz;
-        sample_data_arr[i].speed = 1;
-        sample_data_arr[i].vol = 0.5;
+        sample_data_arr[i].speed = speed * speed_mult;
+        sample_data_arr[i].vol = vol;
      
         char fname[1024];
-        sprintf(fname, SAMPLE_DATA_PATH "%s", sample_name);
+        sprintf(fname, "%s%s", sample_data_path, sample_name);
         
         printf("Load sample '%s' (length %d) to slot %d\n", fname, sz, i);
 

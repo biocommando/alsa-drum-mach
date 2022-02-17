@@ -13,7 +13,7 @@ volatile int run_drum_mach_status = 0;
 void *run_drum_mach(void *arg)
 {
     printf("Start processing thread\n");
-    init_snd("pcm.default");
+    init_snd("pcm.default", 44100);
     short audio_buf[CHANNELS * AUDIO_BUF_SIZE];
     run_drum_mach_status = 1;
     while (run_drum_mach_status == 1)
@@ -28,7 +28,7 @@ void *run_drum_mach(void *arg)
 
 int main(int argc, char **argv)
 {
-    init_drum_mach();
+    init_drum_mach(44100);
 
     pthread_t thread_id;
     pthread_attr_t attr;

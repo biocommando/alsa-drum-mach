@@ -4,7 +4,7 @@
 
 snd_pcm_t *playback_handle;
 
-void init_snd(const char *dev)
+void init_snd(const char *dev, int sample_rate)
 {
     int i;
     int err;

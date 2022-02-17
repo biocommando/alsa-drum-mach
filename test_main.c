@@ -1,14 +1,18 @@
 #include "drum_mach.h"
 #include <stdio.h>
 
-int main(int argc, char **argv)
+void create_output(int stereo)
 {
-    init_drum_mach();
+    char fname[16];
+    sprintf(fname, "out_%c.raw", stereo ? 's' : 'm');
 
-    FILE *fout = fopen("out.raw", "wb");
-    short mono_buf[128];
-    short stereo_buf[128 * 2];
-    for (int i = 0; i < 44100; i += 128)
+    init_drum_mach(44100);
+    short buf[128];
+    FILE *fout = fopen(fname, "wb");
+
+    int samples_per_frame = stereo ? 64 : 128;
+
+    for (int i = 0; i < 44100; i += samples_per_frame)
     {
         if (i == 0)
             drum_mach_trigger(0);
@@ -26,11 +30,18 @@ int main(int argc, char **argv)
             drum_mach_trigger(0);
             drum_mach_trigger(1);
         }
-        //drum_mach_process_audio(mono_buf, 128, 0);
-        drum_mach_process_audio(stereo_buf, 128, 1);
-        fwrite(stereo_buf, sizeof(short), 128 * 2, fout);
+        drum_mach_process_audio(buf, samples_per_frame, stereo);
+        fwrite(buf, sizeof(short), 128, fout);
     }
     fclose(fout);
 
     deinit_drum_mach();
+}
+
+int main(int argc, char **argv)
+{
+    printf("Run for mono\n");
+    create_output(0);
+    printf("Run for stereo\n");
+    create_output(1);
 }
