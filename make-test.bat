@@ -1,0 +1,1 @@
+gcc .\test_main.c .\drum_mach.c "-DSAMPLE_DATA_PATH=\""TR-505\\\\\""" -o test_main
