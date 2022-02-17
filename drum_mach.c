@@ -37,7 +37,7 @@ void init_drum_mach(int sample_rate)
         return;
     }
     char sample_data_path[256];
-    fscanf(fconfig, "%s %d %d", sample_data_path, &midi_note_offset, &midi_port);
+    fscanf(fconfig, "%s", sample_data_path);
     fclose(fconfig);
 
     char config_path[280];
@@ -53,7 +53,7 @@ void init_drum_mach(int sample_rate)
     char readbuf[256];
     fgets(readbuf, 256, fconfig);
     num_samples = MAX_NUM_SLOTS;
-    sscanf(readbuf, "%d", &num_samples);
+    sscanf(readbuf, "%d %d %d", &num_samples, &midi_note_offset, &midi_port);
     if (num_samples <= 0 || num_samples >= MAX_NUM_SLOTS)
     {
         printf("Erroneous number of samples read from config file (unparsed value '%s')\n", readbuf);
