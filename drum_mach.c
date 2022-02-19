@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "drum_mach_conf_preproc.h"
 #include "drum_mach.h"
 #include "filter.h"
+#include "log.h"
+
+#define LOG_ID "DRUM_MACH"
 
 struct sample_data
 {
@@ -57,7 +61,7 @@ void init_drum_mach(int sample_rate)
     fconfig = fopen("path_config.txt", "r");
     if (!fconfig)
     {
-        printf("Could not open path_config.txt\n");
+        log_error("Could not open path_config.txt\n");
         return;
     }
     char sample_data_path[256];
@@ -66,11 +70,11 @@ void init_drum_mach(int sample_rate)
 
     char config_path[280];
     sprintf(config_path, "%ssample_data_config.txt", sample_data_path);
-    printf("Load config from '%s'\n", config_path);
+    log_info("Load config from '%s'\n", config_path);
     fconfig = fopen(config_path, "r");
     if (!fconfig)
     {
-        printf("Could not open file!\n");
+        log_error("Could not open file!\n");
         return;
     }
 
@@ -82,65 +86,21 @@ void init_drum_mach(int sample_rate)
     }
     
     int end_config_found = 0;
-    
-    char config_variables[100][2][16];
-    memset(config_variables, 0, sizeof(config_variables));
-    
+
     while (!feof(fconfig) && !end_config_found)
     {
         char readbuf[256], preproc_buf[1024] = "";
         fgets(readbuf, 256, fconfig);
+        preprocess_line(preproc_buf, 1024, readbuf, sample_data_path);
         
-        int preproc_buf_i = 0;
-        for (int i = 0; readbuf[i]; i++)
-        {
-            if (readbuf[i] == '{')
-            {
-                int s = i + 1;
-                for (; readbuf[i] && readbuf[i] != '}'; i++) {}
-                readbuf[i] = 0;
-                for (int j = 0; j < 100; j++)
-                {
-                    if (!strcmp(config_variables[j][0], &readbuf[s]))
-                    {
-                        strcat(preproc_buf, config_variables[j][1]);
-                        break;
-                    }
-                }
-                readbuf[i] = '}';
-                preproc_buf_i = strlen(preproc_buf);
-                continue;
-            }
-            preproc_buf[preproc_buf_i++] = readbuf[i];
-        }
-        preproc_buf[preproc_buf_i] = 0;
         char cmd = preproc_buf[0];
         char *cmd_params = preproc_buf + 1;
         
         switch (cmd)
         {
-            case '0':
+            case '\0':
             case '\n':
             case '.':
-            break;
-            case ':': // set config variable
-            {
-                char varname[256];
-                char varval[256];
-                sscanf(cmd_params, "%s %s", varname, varval);
-                varname[15] = 0;
-                varval[15] = 0;
-                for (int i = 0; i < 100; i++)
-                {
-                    if (!config_variables[i][0][0])
-                    {
-                        printf("Set variable %s = %s\n", varname, varval);
-                        strcpy(config_variables[i][0], varname);
-                        strcpy(config_variables[i][1], varval);
-                        break;
-                    }
-                }
-            }
             break;
             case 'L': // Load sample
             {
@@ -153,7 +113,7 @@ void init_drum_mach(int sample_rate)
                 char fname[1024];
                 sprintf(fname, "%s%s", sample_data_path, sample_name);
 
-                printf("Load sample '%s' (length %d) to slot %d\n", fname, sz, slot);
+                log_info("Load sample '%s' (length %d) to slot %d\n", fname, sz, slot);
 
                 fbin = fopen(fname, "rb");
 
@@ -169,11 +129,11 @@ void init_drum_mach(int sample_rate)
             break;
             case '#': // # of slots in use
             sscanf(cmd_params, "%d", &num_samples);
-            printf("Slots in use %d\n", num_samples);
+            log_info("Slots in use %d\n", num_samples);
             break;
             case 'M': // MIDI config
             sscanf(cmd_params, "%d %d", &midi_note_offset, &midi_port);
-            printf("Midi note offset %d, port %d\n", midi_note_offset, midi_port);            
+            log_info("Midi note offset %d, port %d\n", midi_note_offset, midi_port);            
             break;
             case 'C': // CC mapping
             {
@@ -191,7 +151,7 @@ void init_drum_mach(int sample_rate)
                     m->cc = cc;
                     m->min = min;
                     m->max = max;
-                    printf("Add CC mapping: slot %d param %d cc %d %f - %f\n", slot, param_id, cc, min, max);
+                    log_info("Add CC mapping: slot %d param %d cc %d %f - %f\n", slot, param_id, cc, min, max);
                 }
             }
             break;
@@ -203,7 +163,7 @@ void init_drum_mach(int sample_rate)
                 sscanf(cmd_params, "%d %d %f", &slot, &param_id, &value);
                 if (slot >= -1 && slot < MAX_NUM_SLOTS)
                 {
-                    printf("Set param: slot %d param %d = %f\n", slot, param_id, value);
+                    log_info("Set param: slot %d param %d = %f\n", slot, param_id, value);
                     drum_mach_set_param(slot, param_id, value);
                 }
             }
@@ -212,7 +172,7 @@ void init_drum_mach(int sample_rate)
             end_config_found = 1;
             break;
             default:
-                printf("Unknown command '%c'\n", cmd);
+                log_warn("Unknown command '%c'\n", cmd);
             break;
         }
     }
@@ -220,25 +180,25 @@ void init_drum_mach(int sample_rate)
     
     if (!end_config_found)
     {
-        printf("Error, config file end command (E) not found\n");
+        log_error("config file end command (E) not found\n");
         return;
     }
     
     if (num_samples <= 0 || num_samples > MAX_NUM_SLOTS)
     {
-        printf("Erroneous number of samples (%d)\n", num_samples);
+        log_error("Erroneous number of samples (%d)\n", num_samples);
         return;
     }
     for (int i = 0; i < num_samples; i++)
     {
         if (!sample_data_arr[i].buf)
         {
-            printf("Error, no sample loaded in slot %d\n", i);
+            log_error("no sample loaded in slot %d\n", i);
             return;
         }
     }
     
-    printf("Drum machine init successful\n");
+    log_info("Drum machine init successful\n");
         
     init_done = 1;
 }
@@ -247,7 +207,7 @@ void deinit_drum_mach()
 {
     if (!init_done)
         return;
-    printf("Free drum samples\n");
+    log_info("Free drum samples\n");
     for (int i = 0; i < num_samples; i++)
         free(sample_data_arr[i].buf);
     init_done = 0;
@@ -273,6 +233,8 @@ void drum_mach_set_param(int idx, int param, float param_val)
             drum_mach_filter_set_cutoff(param_val);
         else if (param == GLOBAL_PARAM_ID_FLT_RES)
             drum_mach_filter_set_resonance(param_val);
+        else if (param == GLOBAL_PARAM_ID_FLT_PRE_OVRDRV)
+            drum_mach_filter_set_pre_overdrive(param_val);
         return;
     }
     if (idx >= 0 && idx < num_samples)

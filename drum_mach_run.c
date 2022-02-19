@@ -6,6 +6,9 @@
 #include "drum_mach.h"
 #include "alsasnd.h"
 #include "alsamidi.h"
+#include "log.h"
+
+#define LOG_ID "MAIN"
 
 #define CHANNELS 2
 #define AUDIO_BUF_SIZE 64
@@ -19,7 +22,7 @@ struct midi_setup midi_setup;
 
 void *run_drum_mach(void *arg)
 {
-    printf("Start processing thread\n");
+    log_info("Start processing thread\n");
     init_snd("pcm.default", 44100);
     short audio_buf[CHANNELS * AUDIO_BUF_SIZE];
     run_drum_mach_status = 1;
@@ -34,9 +37,9 @@ void *run_drum_mach(void *arg)
             init_snd("pcm.default", 44100);
         }
     }
-    printf("Processing thread done\n");
+    log_info("Processing thread done\n");
     deinit_snd();
-    printf("Sound deinited\n");
+    log_info("Sound deinited\n");
     return NULL;
 }
 
@@ -100,11 +103,11 @@ int main(int argc, char **argv)
 
     pthread_create(&thread_id, &attr, &run_drum_mach, NULL);
 
-    printf("Wait for thread to start...\n");
+    log_info("Wait for thread to start...\n");
     while (!run_drum_mach_status)
         usleep(1000);
 
-    printf("Run trigger code\n");
+    log_info("Run trigger code\n");
     signal(SIGINT, sig_handler);
 
     init_midi("hw:1");
@@ -113,12 +116,12 @@ int main(int argc, char **argv)
     run_drum_mach_status = 0;
     pthread_join(thread_id, NULL);
 
-    printf("Thread joined\n");
+    log_info("Thread joined\n");
     pthread_attr_destroy(&attr);
 
-    printf("Deinit drum machine\n");
+    log_info("Deinit drum machine\n");
     deinit_drum_mach();
-    printf("Deinit midi\n");
+    log_info("Deinit midi\n");
     deinit_midi();
     return 0;
 }

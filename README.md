@@ -50,6 +50,16 @@ The variables work so that before any lines are processed variable substitution 
 done first: all `{name}` tags are replaced with the respective value (or empty string
 if variable is not defined).
 
+**Include variable definitions**
+```
+I file_name is_local
+```
+
+`file_name` = file name to include (note that same file must not be included twice)
+
+(optional) `is_local` = if 1, the file is searched from the sample directory, if 0 file is searched
+             from executable directory. Defaults to 1.
+
 **Number of slots**
 ```
 # num_slots

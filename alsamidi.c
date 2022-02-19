@@ -38,7 +38,7 @@ extern void on_midi_callback(char *, int);
 
 void listen_for_midi_loop()
 {
-    int i, err;
+    int err;
     int npfds;
     struct pollfd *pfds;
     npfds = snd_rawmidi_poll_descriptors_count(input);

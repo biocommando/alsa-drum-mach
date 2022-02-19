@@ -5,5 +5,6 @@ void drum_mach_filter_init(int sample_rate);
 double drum_mach_filter_calculate(double input);
 void drum_mach_filter_set_cutoff(double c);
 void drum_mach_filter_set_resonance(double r);
+void drum_mach_filter_set_pre_overdrive(double od);
 
 #endif

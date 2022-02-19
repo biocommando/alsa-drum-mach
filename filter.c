@@ -11,6 +11,7 @@ double resonance;
 double sampleRate;
 const double to_1 = 1.0 / 0x8000;
 const double from_1 = 0x8000; 
+double pre_overdrive = 1;
 
 inline static double fast_tanh(double x)
 {
@@ -36,6 +37,7 @@ void drum_mach_filter_init(int sample_rate)
 double drum_mach_filter_calculate(double x)
 {
     x *= to_1;
+    x = fast_tanh(x * pre_overdrive);
     const double k = 4 * resonance;
     // Coefficients optimized using differential evolution
     // to make feedback gain 4.0 correspond closely to the
@@ -64,4 +66,10 @@ void drum_mach_filter_set_resonance(double r)
 {
     resonance = r;
 }
+
+void drum_mach_filter_set_pre_overdrive(double od)
+{
+    pre_overdrive = 1 + od * 10;
+}
+
 
