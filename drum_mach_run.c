@@ -8,7 +8,7 @@
 #include "alsamidi.h"
 
 #define CHANNELS 2
-#define AUDIO_BUF_SIZE 32
+#define AUDIO_BUF_SIZE 64
 
 #define MIDI_NOTE_ON 0x90
 #define MIDI_NOTE_OFF 0x80
@@ -26,11 +26,16 @@ void *run_drum_mach(void *arg)
     while (run_drum_mach_status == 1)
     {
         drum_mach_process_audio(audio_buf, AUDIO_BUF_SIZE, CHANNELS == 2);
-        write_buf_snd(audio_buf, AUDIO_BUF_SIZE);
+        int err = write_buf_snd(audio_buf, AUDIO_BUF_SIZE);
+        if (err < 0)
+        {
+            deinit_snd();
+            usleep(1000 * 10);
+            init_snd("pcm.default", 44100);
+        }
     }
     printf("Processing thread done\n");
     deinit_snd();
-    usleep(1000 * 200);
     printf("Sound deinited\n");
     return NULL;
 }

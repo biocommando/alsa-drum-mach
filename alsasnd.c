@@ -103,7 +103,7 @@ void deinit_snd()
     snd_pcm_close(playback_handle);
 }
 
-void write_buf_snd(short *buf, int count)
+int write_buf_snd(short *buf, int count)
 {
-    snd_pcm_writei(playback_handle, buf, count);
+    return snd_pcm_writei(playback_handle, buf, count);
 }

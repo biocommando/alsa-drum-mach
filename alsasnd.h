@@ -3,6 +3,6 @@
 
 void init_snd(const char *dev, int sample_rate);
 void deinit_snd();
-void write_buf_snd(short *buf, int count);
+int write_buf_snd(short *buf, int count);
 
 #endif
