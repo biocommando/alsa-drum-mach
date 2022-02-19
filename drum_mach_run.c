@@ -7,6 +7,7 @@
 #include "alsasnd.h"
 #include "alsamidi.h"
 #include "log.h"
+#include "parse_args.c"
 
 #define LOG_ID "MAIN"
 
@@ -92,8 +93,9 @@ static void sig_handler(int arg)
 
 int main(int argc, char **argv)
 {
-    log_midi = 1;
-    init_drum_mach(44100);
+    log_midi = get_int_arg(argc, argv, "--log-midi", 0);
+    int kit_number = get_int_arg(argc, argv, "--kit", 0);
+    init_drum_mach(44100, kit_number);
 
     midi_setup = get_midi_setup();
 

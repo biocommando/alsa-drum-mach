@@ -18,7 +18,7 @@
 
 #define NUM_CC_MAPPINGS (NUM_PARAMS * MAX_NUM_SLOTS + NUM_GLOBAL_PARAMS)
 
-void init_drum_mach(int sample_rate);
+void init_drum_mach(int sample_rate, int kit_number);
 void deinit_drum_mach();
 void drum_mach_trigger(int idx);
 void drum_mach_set_param(int idx, int param, float param_val);

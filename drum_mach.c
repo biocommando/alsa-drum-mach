@@ -47,7 +47,7 @@ float speed_mult = 1;
 float global_volume = 1;
 float global_use_filter = 0;
 
-void init_drum_mach(int sample_rate)
+void init_drum_mach(int sample_rate, int kit_number)
 {
     if (init_done)
         return;
@@ -64,8 +64,9 @@ void init_drum_mach(int sample_rate)
         log_error("Could not open path_config.txt\n");
         return;
     }
-    char sample_data_path[256];
-    fscanf(fconfig, "%s", sample_data_path);
+    char sample_data_path[256] = "";
+    for (int i = 0; i <= kit_number; i++)
+    	fscanf(fconfig, "%s", sample_data_path);
     fclose(fconfig);
 
     char config_path[280];
