@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "drum_mach.h"
+#include "filter.h"
 
 struct sample_data
 {
@@ -10,25 +11,48 @@ struct sample_data
     float pos;
     float speed;
     float vol;
-
-    int speed_cc;
-    int vol_cc;
 };
 
 struct sample_data sample_data_arr[MAX_NUM_SLOTS];
+
+struct midi_cc_setup cc_mappings[NUM_CC_MAPPINGS];
+
+void init_cc_mappings()
+{
+    for (int i = 0; i < NUM_CC_MAPPINGS; i++)
+        cc_mappings[i].cc = -1;
+}
+
+struct midi_cc_setup *get_next_cc()
+{
+    for (int i = 0; i < NUM_CC_MAPPINGS; i++)
+    {
+        if (cc_mappings[i].cc == -1)
+            return &cc_mappings[i];
+    }
+    return NULL;
+}
+
 int init_done = 0;
-int num_samples;
+int num_samples = MAX_NUM_SLOTS;
 int midi_note_offset = 0;
 int midi_port = -1;
+float speed_mult = 1;
+
+/* global parameters */
+float global_volume = 1;
+float global_use_filter = 0;
 
 void init_drum_mach(int sample_rate)
 {
     if (init_done)
         return;
+    drum_mach_filter_init(sample_rate);
+    init_cc_mappings();
 
     FILE *fbin, *fconfig;
 
-    double speed_mult = 44100.0 / sample_rate;
+    speed_mult = 44100.0f / sample_rate;
 
     fconfig = fopen("path_config.txt", "r");
     if (!fconfig)
@@ -50,52 +74,172 @@ void init_drum_mach(int sample_rate)
         return;
     }
 
-    char readbuf[256];
-    fgets(readbuf, 256, fconfig);
-    num_samples = MAX_NUM_SLOTS;
-    sscanf(readbuf, "%d %d %d", &num_samples, &midi_note_offset, &midi_port);
-    if (num_samples <= 0 || num_samples >= MAX_NUM_SLOTS)
+    memset(sample_data_arr, 0, sizeof(sample_data_arr));
+    for (int i = 0; i < MAX_NUM_SLOTS; i++)
     {
-        printf("Erroneous number of samples read from config file (unparsed value '%s')\n", readbuf);
-        fclose(fconfig);
-        return;
+        sample_data_arr[i].speed = speed_mult;
+        sample_data_arr[i].vol = 0.5;
     }
-    printf("Number of slots in use: %d\n", num_samples);
-
-    for (int i = 0; i < num_samples; i++)
+    
+    int end_config_found = 0;
+    
+    char config_variables[100][2][16];
+    memset(config_variables, 0, sizeof(config_variables));
+    
+    while (!feof(fconfig) && !end_config_found)
     {
-        int sz = 0;
-        char sample_name[256];
-        float speed = 1;
-        float vol = 0.5;
-        int speed_cc = -1;
-        int vol_cc = -1;
+        char readbuf[256], preproc_buf[1024] = "";
         fgets(readbuf, 256, fconfig);
-        sscanf(readbuf, "%s %d %f %f", sample_name, &sz, &speed, &vol, &speed_cc, &vol_cc);
-
-        sample_data_arr[i].buf = NULL;
-        sample_data_arr[i].size = sz;
-        sample_data_arr[i].pos = sz;
-        sample_data_arr[i].speed = speed * speed_mult;
-        sample_data_arr[i].speed_cc = speed_cc;
-        sample_data_arr[i].vol = vol;
-        sample_data_arr[i].vol_cc = vol_cc;
-
-        char fname[1024];
-        sprintf(fname, "%s%s", sample_data_path, sample_name);
-
-        printf("Load sample '%s' (length %d) to slot %d\n", fname, sz, i);
-
-        fbin = fopen(fname, "rb");
-
-        if (sz)
+        
+        int preproc_buf_i = 0;
+        for (int i = 0; readbuf[i]; i++)
         {
-            sample_data_arr[i].buf = malloc(sz * sizeof(short));
-            fread(sample_data_arr[i].buf, sizeof(short), sz, fbin);
+            if (readbuf[i] == '{')
+            {
+                int s = i + 1;
+                for (; readbuf[i] && readbuf[i] != '}'; i++) {}
+                readbuf[i] = 0;
+                for (int j = 0; j < 100; j++)
+                {
+                    if (!strcmp(config_variables[j][0], &readbuf[s]))
+                    {
+                        strcat(preproc_buf, config_variables[j][1]);
+                        break;
+                    }
+                }
+                readbuf[i] = '}';
+                preproc_buf_i = strlen(preproc_buf);
+                continue;
+            }
+            preproc_buf[preproc_buf_i++] = readbuf[i];
         }
-        fclose(fbin);
+        preproc_buf[preproc_buf_i] = 0;
+        char cmd = preproc_buf[0];
+        char *cmd_params = preproc_buf + 1;
+        
+        switch (cmd)
+        {
+            case '0':
+            case '\n':
+            case '.':
+            break;
+            case ':': // set config variable
+            {
+                char varname[256];
+                char varval[256];
+                sscanf(cmd_params, "%s %s", varname, varval);
+                varname[15] = 0;
+                varval[15] = 0;
+                for (int i = 0; i < 100; i++)
+                {
+                    if (!config_variables[i][0][0])
+                    {
+                        printf("Set variable %s = %s\n", varname, varval);
+                        strcpy(config_variables[i][0], varname);
+                        strcpy(config_variables[i][1], varval);
+                        break;
+                    }
+                }
+            }
+            break;
+            case 'L': // Load sample
+            {
+                int slot = 0;
+                int sz = 0;
+                char sample_name[256];
+                
+                sscanf(cmd_params, "%d %s %d", &slot, sample_name, &sz);
+                
+                char fname[1024];
+                sprintf(fname, "%s%s", sample_data_path, sample_name);
+
+                printf("Load sample '%s' (length %d) to slot %d\n", fname, sz, slot);
+
+                fbin = fopen(fname, "rb");
+
+                if (sz && slot >= 0 && slot < MAX_NUM_SLOTS)
+                {
+                    sample_data_arr[slot].buf = malloc(sz * sizeof(short));
+                    fread(sample_data_arr[slot].buf, sizeof(short), sz, fbin);
+                    sample_data_arr[slot].size = sz;
+                    sample_data_arr[slot].pos = sz;
+                }
+                fclose(fbin);
+            }
+            break;
+            case '#': // # of slots in use
+            sscanf(cmd_params, "%d", &num_samples);
+            printf("Slots in use %d\n", num_samples);
+            break;
+            case 'M': // MIDI config
+            sscanf(cmd_params, "%d %d", &midi_note_offset, &midi_port);
+            printf("Midi note offset %d, port %d\n", midi_note_offset, midi_port);            
+            break;
+            case 'C': // CC mapping
+            {
+                int slot = 0;
+                int cc = -1;
+                float min = 0;
+                float max = 1;
+                int param_id;
+                sscanf(cmd_params, "%d %d %d %f %f", &slot, &param_id, &cc, &min, &max);
+                struct midi_cc_setup *m = get_next_cc();
+                if (m)
+                {
+                    m->slot = slot;
+                    m->param_id = param_id;
+                    m->cc = cc;
+                    m->min = min;
+                    m->max = max;
+                    printf("Add CC mapping: slot %d param %d cc %d %f - %f\n", slot, param_id, cc, min, max);
+                }
+            }
+            break;
+            case 'P': // Parameter values
+            {
+                int slot = 0;
+                int param_id = PARAM_ID_SPEED;
+                float value = 1;
+                sscanf(cmd_params, "%d %d %f", &slot, &param_id, &value);
+                if (slot >= -1 && slot < MAX_NUM_SLOTS)
+                {
+                    printf("Set param: slot %d param %d = %f\n", slot, param_id, value);
+                    drum_mach_set_param(slot, param_id, value);
+                }
+            }
+            break;
+            case 'E':
+            end_config_found = 1;
+            break;
+            default:
+                printf("Unknown command '%c'\n", cmd);
+            break;
+        }
     }
     fclose(fconfig);
+    
+    if (!end_config_found)
+    {
+        printf("Error, config file end command (E) not found\n");
+        return;
+    }
+    
+    if (num_samples <= 0 || num_samples > MAX_NUM_SLOTS)
+    {
+        printf("Erroneous number of samples (%d)\n", num_samples);
+        return;
+    }
+    for (int i = 0; i < num_samples; i++)
+    {
+        if (!sample_data_arr[i].buf)
+        {
+            printf("Error, no sample loaded in slot %d\n", i);
+            return;
+        }
+    }
+    
+    printf("Drum machine init successful\n");
+        
     init_done = 1;
 }
 
@@ -119,10 +263,22 @@ void drum_mach_trigger(int idx)
 
 void drum_mach_set_param(int idx, int param, float param_val)
 {
+    if (idx == -1)
+    {
+        if (param == GLOBAL_PARAM_ID_VOL)
+            global_volume = param_val;
+        else if (param == GLOBAL_PARAM_ID_USE_FLT)
+            global_use_filter = param_val;
+        else if (param == GLOBAL_PARAM_ID_FLT_CUT)
+            drum_mach_filter_set_cutoff(param_val);
+        else if (param == GLOBAL_PARAM_ID_FLT_RES)
+            drum_mach_filter_set_resonance(param_val);
+        return;
+    }
     if (idx >= 0 && idx < num_samples)
     {
         if (param == PARAM_ID_SPEED)
-            sample_data_arr[idx].speed = param_val;
+            sample_data_arr[idx].speed = param_val * speed_mult;
         else if (param == PARAM_ID_VOL)
             sample_data_arr[idx].vol = param_val;
     }
@@ -144,6 +300,11 @@ void drum_mach_process_audio(short *data, int count_samples, int is_stereo)
                 d->pos += d->speed;
             }
         }
+        sample_val *= global_volume;
+        if (global_use_filter > 0.5)
+        {
+            sample_val = drum_mach_filter_calculate(sample_val);
+        }
         sample_val = sample_val < -32768 ? -32768 : (sample_val > 32767 ? 32767 : sample_val);
         const short s_sample_val = (short)sample_val;
         if (is_stereo)
@@ -164,12 +325,6 @@ struct midi_setup get_midi_setup()
     setup.note_offset = midi_note_offset;
     setup.port = midi_port;
     setup.num_slots = num_samples;
-    for (int i = 0; i < num_samples; i++)
-    {
-        setup.cc_setup[i][0].param_id = PARAM_ID_SPEED;
-        setup.cc_setup[i][0].cc = sample_data_arr[i].speed_cc;
-        setup.cc_setup[i][1].param_id = PARAM_ID_VOL;
-        setup.cc_setup[i][1].cc = sample_data_arr[i].vol_cc;
-    }
+    memcpy(setup.cc_setup, cc_mappings, sizeof(cc_mappings));
     return setup;
 }

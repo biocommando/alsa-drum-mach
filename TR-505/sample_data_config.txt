@@ -1,17 +1,62 @@
-16
-TR-505Kick.raw 2786
-TR-505Rim.raw 2221
-TR-505Snare.raw 5470
-TR-505Clap.raw 6002
-TR-505Hat_C.raw 3668
-TR-505Hat_O.raw 14335
-TR-505Ride.raw 27225
-TR-505Crash.raw 54217
-TR-505Tom_Lo.raw 14146
-TR-505Tom_Mid.raw 14281
-TR-505Tom_Hi.raw 14192
-TR-505Conga_Hi.raw 2808
-TR-505Conga_Lo.raw 7034
-TR-505Cow_Hi.raw 5898
-TR-505Cow_Lo.raw 6498
-TR-505Timbale.raw 14016
+... Commands ...
+
+: load			L
+: cc			C
+: slots		#
+: set_param		P
+: end_conf		E
+
+... Slots ...
+
+: global		-1
+
+... Parameter ids ...
+
+: speed		1
+: volume		2
+
+: filter_enable	10
+:   enabled		1
+:   disabled		0	
+: filter_cutoff	11
+: filter_resonc	12
+
+... Kit specific ...
+
+: speed_min		0.5
+: speed_max		1.5
+: volume_min		0
+: volume_max		2
+
+.		slot	sample			frames	param			val	cc	min		max	
+#		16
+{load}		0	TR-505Kick.raw		2786
+{load}		1	TR-505Rim.raw		2221
+{load}		2	TR-505Snare.raw	5470
+{load}		3	TR-505Clap.raw		6002
+{load}		4	TR-505Hat_C.raw	3668
+{load}		5	TR-505Hat_O.raw	14335
+{load}		6	TR-505Ride.raw		27225
+{load}		7	TR-505Crash.raw	54217
+{load}		8	TR-505Tom_Lo.raw	14146
+{load}		9	TR-505Tom_Mid.raw	14281
+{load}		10	TR-505Tom_Hi.raw	14192
+{load}		11	TR-505Conga_Hi.raw	2808
+{load}		12	TR-505Conga_Lo.raw	7034
+{load}		13	TR-505Cow_Hi.raw	5898
+{load}		14	TR-505Cow_Lo.raw	6498
+{load}		15	TR-505Timbale.raw	14016
+
+. CC mappings
+
+{cc}		0					{speed}			70	{speed_min}	{speed_max}
+{cc}		0					{volume}			76	{volume_min}	{volume_max}
+
+. Enable filter & set CC mappings
+{set_param}	{global}				{filter_enable}	{enabled}
+{cc}		{global}				{filter_cutoff}		73
+{cc}		{global}				{filter_resonc}		75
+
+
+{end_conf}
+

@@ -30,8 +30,20 @@ void *run_drum_mach(void *arg)
     }
     printf("Processing thread done\n");
     deinit_snd();
+    usleep(1000 * 200);
     printf("Sound deinited\n");
     return NULL;
+}
+
+int log_midi = 0;
+
+void do_log_midi(char *buf, int length)
+{
+    if (!log_midi)
+      return;
+    for (int i = 0; i < length; i++)
+        printf("%x ", (int)(unsigned char)buf[i]);
+    printf("\n");
 }
 
 void on_midi_callback(char *buf, int length)
@@ -40,22 +52,24 @@ void on_midi_callback(char *buf, int length)
     {
         if ((buf[0] & 0xF0) == MIDI_NOTE_ON && length >= 2)
         {
+            do_log_midi(buf, 2);
             int note = buf[1];
             drum_mach_trigger(note - midi_setup.note_offset);
         }
         else if ((buf[0] & 0xF0) == MIDI_CC && length >= 3)
         {
+            do_log_midi(buf, 3);
             int cc = buf[1];
-            int value = buf[2];
-            for (int i = 0; i < midi_setup.num_slots; i++)
+            float value = buf[2] / 127.0f;
+            for (int i = 0; i < NUM_CC_MAPPINGS && midi_setup.cc_setup[i].cc != -1 ; i++)
             {
-                for (int j = 0; j < NUM_PARAMS; j++)
+                if (midi_setup.cc_setup[i].cc == cc)
                 {
-                    if (midi_setup.cc_setup[i][j].cc == cc)
-                    {
-                        int param_id = midi_setup.cc_setup[i][j].param_id;
-                        drum_mach_set_param(i, param_id, value / 127.0);
-                    }
+                    int slot = midi_setup.cc_setup[i].slot;
+                    int param_id = midi_setup.cc_setup[i].param_id;
+                    float min = midi_setup.cc_setup[i].min;
+                    float max = midi_setup.cc_setup[i].max;
+                    drum_mach_set_param(slot, param_id, (max - min) * value + min);
                 }
             }
         }
@@ -70,6 +84,7 @@ static void sig_handler(int arg)
 
 int main(int argc, char **argv)
 {
+    log_midi = 1;
     init_drum_mach(44100);
 
     midi_setup = get_midi_setup();
