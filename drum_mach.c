@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "wav_handler/wav_handler.h"
 #include "drum_mach_conf_preproc.h"
 #include "drum_mach.h"
 #include "filter.h"
@@ -14,6 +15,7 @@ struct sample_data
     int size;
     float pos;
     float speed;
+    float sample_rate_convert;
     float vol;
 };
 
@@ -41,7 +43,6 @@ int init_done = 0;
 int num_samples = MAX_NUM_SLOTS;
 int midi_note_offset = 0;
 int midi_port = -1;
-float speed_mult = 1;
 
 /* global parameters */
 float global_volume = 1;
@@ -55,8 +56,6 @@ void init_drum_mach(int sample_rate, int kit_number)
     init_cc_mappings();
 
     FILE *fbin, *fconfig;
-
-    speed_mult = 44100.0f / sample_rate;
 
     fconfig = fopen("path_config.txt", "r");
     if (!fconfig)
@@ -82,7 +81,6 @@ void init_drum_mach(int sample_rate, int kit_number)
     memset(sample_data_arr, 0, sizeof(sample_data_arr));
     for (int i = 0; i < MAX_NUM_SLOTS; i++)
     {
-        sample_data_arr[i].speed = speed_mult;
         sample_data_arr[i].vol = 0.5;
     }
     
@@ -106,26 +104,39 @@ void init_drum_mach(int sample_rate, int kit_number)
             case 'L': // Load sample
             {
                 int slot = 0;
-                int sz = 0;
                 char sample_name[256];
                 
-                sscanf(cmd_params, "%d %s %d", &slot, sample_name, &sz);
+                sscanf(cmd_params, "%d %s", &slot, sample_name);
                 
                 char fname[1024];
                 sprintf(fname, "%s%s", sample_data_path, sample_name);
 
-                log_info("Load sample '%s' (length %d) to slot %d\n", fname, sz, slot);
-
-                fbin = fopen(fname, "rb");
-
-                if (sz && slot >= 0 && slot < MAX_NUM_SLOTS)
+                log_info("Load sample '%s' to slot %d\n", fname, slot);
+                struct wav_file wav;
+                if (read_wav_file(fname, &wav))
                 {
-                    sample_data_arr[slot].buf = malloc(sz * sizeof(short));
-                    fread(sample_data_arr[slot].buf, sizeof(short), sz, fbin);
-                    sample_data_arr[slot].size = sz;
-                    sample_data_arr[slot].pos = sz;
+                    log_error("Error while loading wave file\n");
+                    return;
                 }
-                fclose(fbin);
+                if (wav.channels != 1)
+                {
+                    log_error("Only mono samples are supported\n");
+                    return;
+                }
+                if (slot >= 0 && slot < MAX_NUM_SLOTS)
+                {
+                    sample_data_arr[slot].buf = malloc(wav.num_frames * sizeof(short));
+                    sample_data_arr[slot].size = wav.num_frames;
+                    sample_data_arr[slot].pos = wav.num_frames;
+                    sample_data_arr[slot].sample_rate_convert = wav.sample_rate / sample_rate;
+                    sample_data_arr[slot].speed = sample_data_arr[slot].sample_rate_convert;
+                    for (int i = 0; i < wav.num_frames; i++)
+                    {
+                        float val = 0;
+                        wav_get_normalized(&wav, i, &val);
+                        sample_data_arr[slot].buf[i] = val * 32767;
+                    }
+                }
             }
             break;
             case '#': // # of slots in use
@@ -206,11 +217,13 @@ void init_drum_mach(int sample_rate, int kit_number)
 
 void deinit_drum_mach()
 {
-    if (!init_done)
-        return;
     log_info("Free drum samples\n");
-    for (int i = 0; i < num_samples; i++)
-        free(sample_data_arr[i].buf);
+    for (int i = 0; i < MAX_NUM_SLOTS; i++)
+    {
+        if (sample_data_arr[i].buf)
+           free(sample_data_arr[i].buf);
+        sample_data_arr[i].buf = NULL;
+    }
     init_done = 0;
 }
 
@@ -241,7 +254,7 @@ void drum_mach_set_param(int idx, int param, float param_val)
     if (idx >= 0 && idx < num_samples)
     {
         if (param == PARAM_ID_SPEED)
-            sample_data_arr[idx].speed = param_val * speed_mult;
+            sample_data_arr[idx].speed = param_val * sample_data_arr[idx].sample_rate_convert;
         else if (param == PARAM_ID_VOL)
             sample_data_arr[idx].vol = param_val;
     }
