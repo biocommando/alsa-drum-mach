@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := --std=gnu99
+CFLAGS := --std=gnu99 -Ofast -Wall -Wno-unused-result
 LIBS := -lasound -pthread
 	
 DMACH_FILES := \

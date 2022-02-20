@@ -7,7 +7,6 @@
 #include <alsa/asoundlib.h>
 
 static snd_rawmidi_t *input = NULL, **inputp;
-static snd_rawmidi_t *output = NULL, **outputp;
 
 #define error printf
 
@@ -15,8 +14,7 @@ void init_midi(const char *port_name)
 {
     int err;
     inputp = &input;
-    outputp = NULL;
-    if ((err = snd_rawmidi_open(inputp, outputp, port_name, SND_RAWMIDI_NONBLOCK)) < 0)
+    if ((err = snd_rawmidi_open(inputp, NULL, port_name, SND_RAWMIDI_NONBLOCK)) < 0)
     {
         error("cannot open port \"%s\": %s", port_name, snd_strerror(err));
         return;
@@ -47,7 +45,7 @@ void listen_for_midi_loop()
     while (1)
     {
 
-        unsigned char buf[256];
+        char buf[256];
         int i, length;
         unsigned short revents;
 

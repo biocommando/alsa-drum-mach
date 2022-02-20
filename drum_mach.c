@@ -55,7 +55,7 @@ void init_drum_mach(int sample_rate, int kit_number)
     drum_mach_filter_init(sample_rate);
     init_cc_mappings();
 
-    FILE *fbin, *fconfig;
+    FILE *fconfig;
 
     fconfig = fopen("path_config.txt", "r");
     if (!fconfig)

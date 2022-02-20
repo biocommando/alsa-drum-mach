@@ -6,9 +6,7 @@ snd_pcm_t *playback_handle;
 
 void init_snd(const char *dev, int sample_rate)
 {
-    int i;
     int err;
-    short buf[128];
     snd_pcm_hw_params_t *hw_params;
 
     if ((err = snd_pcm_open(&playback_handle, dev, SND_PCM_STREAM_PLAYBACK, 0)) < 0)
@@ -86,16 +84,6 @@ void init_snd(const char *dev, int sample_rate)
         exit(1);
     }
 
-    /*for (i = 0; i < 10; ++i) {
-        if ((err = snd_pcm_writei (playback_handle, buf, 128)) != 128) {
-            fprintf (stderr, "write to audio interface failed (%s)\n",
-                 snd_strerror (err));
-            exit (1);
-        }
-    }
-
-    snd_pcm_close (playback_handle);
-    exit (0);*/
 }
 
 void deinit_snd()
