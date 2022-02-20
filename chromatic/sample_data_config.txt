@@ -1,0 +1,60 @@
+I common_conf.vars 0
+
+{set_var} file sine_pluck.wav
+{slots} 25
+
+{load}      0     {file}
+{load}      1     {file}
+{load}      2     {file}
+{load}      3     {file}
+{load}      4     {file}
+{load}      5     {file}
+{load}      6     {file}
+{load}      7     {file}
+{load}      8     {file}
+{load}      9     {file}
+{load}      10    {file}
+{load}      11    {file}
+{load}      12    {file}
+{load}      13    {file}
+{load}      14    {file}
+{load}      15    {file}
+{load}      16    {file}
+{load}      17    {file}
+{load}      18    {file}
+{load}      19    {file}
+{load}      20    {file}
+{load}      21    {file}
+{load}      22    {file}
+{load}      23    {file}
+{load}      24    {file}
+{load}      25    {file}
+
+{set_param} 0 {speed} 0.29730177875068026
+{set_param} 1 {speed} 0.3149802624737183
+{set_param} 2 {speed} 0.3337099635425086
+{set_param} 3 {speed} 0.3535533905932738
+{set_param} 4 {speed} 0.3745767692191704
+{set_param} 5 {speed} 0.3968502629920499
+{set_param} 6 {speed} 0.42044820762685725
+{set_param} 7 {speed} 0.44544935907016964
+{set_param} 8 {speed} 0.47193715634084676
+{set_param} 9 {speed} 0.5
+{set_param} 10 {speed} 0.5297315471796477
+{set_param} 11 {speed} 0.5612310241546865
+{set_param} 12 {speed} 0.5946035575013605
+{set_param} 13 {speed} 0.6299605249474366
+{set_param} 14 {speed} 0.6674199270850172
+{set_param} 15 {speed} 0.7071067811865476
+{set_param} 16 {speed} 0.7491535384383408
+{set_param} 17 {speed} 0.7937005259840998
+{set_param} 18 {speed} 0.8408964152537145
+{set_param} 19 {speed} 0.8908987181403393
+{set_param} 20 {speed} 0.9438743126816935
+{set_param} 21 {speed} 1.0
+{set_param} 22 {speed} 1.0594630943592953
+{set_param} 23 {speed} 1.122462048309373
+{set_param} 24 {speed} 1.189207115002721
+
+E
+

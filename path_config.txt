@@ -1,1 +1,2 @@
-TR-505/ /home/bjorkpaa/drmachs/[KB6]_Acetone_Rhythm-King/[KB6]_Acetone_Rhythm-King/
+TR-505/
+chromatic/
