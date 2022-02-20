@@ -8,23 +8,23 @@ I common_conf.vars	0
 
 {slots}	16
 
-.		slot		sample			frames	
-{load}		{kick}		TR-505Kick.raw		2786
-{load}		{rim}		TR-505Rim.raw		2221
-{load}		{snr}		TR-505Snare.raw	5470
-{load}		{clap}		TR-505Clap.raw		6002
-{load}		{hatC}		TR-505Hat_C.raw	3668
-{load}		{hatO}		TR-505Hat_O.raw	14335
-{load}		{ride}		TR-505Ride.raw		27225
-{load}		{crsh}		TR-505Crash.raw	54217
-{load}		{tomL}		TR-505Tom_Lo.raw	14146
-{load}		{tomM}		TR-505Tom_Mid.raw	14281
-{load}		{tomH}		TR-505Tom_Hi.raw	14192
-{load}		{cngH}		TR-505Conga_Hi.raw	2808
-{load}		{cngL}		TR-505Conga_Lo.raw	7034
-{load}		{cowH}		TR-505Cow_Hi.raw	5898
-{load}		{cowL}		TR-505Cow_Lo.raw	6498
-{load}		{timb}		TR-505Timbale.raw	14016
+.		slot		sample
+{load}		{kick}		TR-505Kick.wav
+{load}		{rim}		TR-505Rim.wav
+{load}		{snr}		TR-505Snare.wav
+{load}		{clap}		TR-505Clap.wav
+{load}		{hatC}		TR-505Hat_C.wav
+{load}		{hatO}		TR-505Hat_O.wav
+{load}		{ride}		TR-505Ride.wav
+{load}		{crsh}		TR-505Crash.wav
+{load}		{tomL}		TR-505Tom_Lo.wav
+{load}		{tomM}		TR-505Tom_Mid.wav
+{load}		{tomH}		TR-505Tom_Hi.wav
+{load}		{cngH}		TR-505Conga_Hi.wav
+{load}		{cngL}		TR-505Conga_Lo.wav
+{load}		{cowH}		TR-505Cow_Hi.wav
+{load}		{cowL}		TR-505Cow_Lo.wav
+{load}		{timb}		TR-505Timbale.wav
 
 . CC mappings
 .		slot		param			cc/val		min		max
