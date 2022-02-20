@@ -94,7 +94,7 @@ static void sig_handler(int arg)
 
 int main(int argc, char **argv)
 {
-    log_info("Build date: " BUILD_DATE);
+    log_info("Build date: " BUILD_DATE "\n");
 
     log_midi = get_int_arg(argc, argv, "--log-midi", 0);
     int kit_number = get_int_arg(argc, argv, "--kit", 0);

@@ -118,9 +118,9 @@ void init_drum_mach(int sample_rate, int kit_number)
                     log_error("Error while loading wave file\n");
                     return;
                 }
-                if (wav.channels != 1)
+                if (wav.channels != 1 && wav.channels != 2)
                 {
-                    log_error("Only mono samples are supported\n");
+                    log_error("Only mono/stereo samples are supported\n");
                     return;
                 }
                 if (slot >= 0 && slot < MAX_NUM_SLOTS)
@@ -132,9 +132,9 @@ void init_drum_mach(int sample_rate, int kit_number)
                     sample_data_arr[slot].speed = sample_data_arr[slot].sample_rate_convert;
                     for (int i = 0; i < wav.num_frames; i++)
                     {
-                        float val = 0;
-                        wav_get_normalized(&wav, i, &val);
-                        sample_data_arr[slot].buf[i] = val * 32767;
+                        float val[] = {0,0};
+                        wav_get_normalized(&wav, i, val);
+                        sample_data_arr[slot].buf[i] = val[0] * 32767;
                     }
                 }
             }
